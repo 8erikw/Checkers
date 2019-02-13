@@ -2,10 +2,10 @@ RED, BLUE = 0, 1
 
 
 class Pieces:
-    def __init__(self, x_position, y_position, team):
+    def __init__(self, x_position, y_position, team, king = False):
         self.position = (x_position, y_position)
         self.team = team
-        self.king = False
+        self.king = king
 
     def promote(self):
         if self.is_king():
@@ -26,3 +26,14 @@ class Pieces:
 
     def get_team(self):
         return self.team
+
+    def deep_copy(self):
+        x = self.position[0]
+        y = self.position[1]
+        team = BLUE
+        if self.team == RED:
+            team = RED
+        new_king = False
+        if self.king:
+            new_king = True
+        return Pieces(x, y, team, king=new_king)

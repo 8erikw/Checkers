@@ -7,7 +7,10 @@
 
 from Pieces import Pieces
 
-RED, BLUE = 1, 0
+RED, BLUE = 0, 1
+DEPTH = 5
+
+
 # RED pieces will always go first
 # TO BE IMPLEMENTED : Players can choose which color piece they want to play at the start of the game
 
@@ -26,9 +29,7 @@ class CheckersModel:
         self.state = []
         self.red_pieces = []
         self.blue_pieces = []
-        self.state = []
         self.init_Game()
-
 
     def init_Game(self):
         """
@@ -59,9 +60,8 @@ class CheckersModel:
                 self.blue_pieces.append(Pieces(2, i, BLUE))
                 self.red_pieces.append(Pieces(6, i, RED))
 
-        self.state.append(self.blue_pieces)
         self.state.append(self.red_pieces)
-
+        self.state.append(self.blue_pieces)
 
     def isTerminalState(self):
         """
@@ -71,6 +71,81 @@ class CheckersModel:
         return len(self.red_pieces) == 0 or len(self.blue_pieces) == 0
 
     def move(self, curr_piece, move):
+        """
+
+        :param curr_piece: A piece object
+        :param move: A tuple holding the change in coordinates (dx, dy) of the given piece
+        :return: The next state of the board after the move is played
+        """
+        # Checking so that a non-king piece is not moving backwards
+        if move[1] < 0 and not curr_piece.is_king():
+            raise ValueError("Invalid Move")
+
+        # Checking so that a move strictly diagonal and within a 1 or 2 unit radius
+        if abs(move[1]) != abs(move[0]) and (abs(move[0]) > 2 or move[0] == 0):
+            raise ValueError("Invalid Move")
+
+        # new_spot is the new location of the curr_piece
+        new_spot = (curr_piece[0] + move[0], curr_piece[1] + move[1])
+
+        # Checks if the new_spot is within the board's boundaries
+        if new_spot[0] < 0 or new_spot[1] < 0 or new_spot[0] > self.size - 1 or new_spot[1] > self.size - 1:
+            raise ValueError("Invalid Move")
+
+        # Checking so that moves are valid
+
+        # Checking if a piece is not currently at the new_spot
+        if abs(move[0]) == 1:
+            for team in self.state:
+                for piece in team:
+                    if piece.get_position == new_spot:
+                        raise ValueError("Invalid Move")
+            # After exiting the double for loop, we are sure that there are no pieces occupying the new square,
+            # as no exceptions were raised
+            curr_piece.change_position(new_spot)
+
+            promotion_row = curr_piece.get_team() * self.size
+            if new_spot[1] == promotion_row and not curr_piece.is_king():
+                curr_piece.promote()
+
+            return
+
+        # A jump is taking place, so an opposing color piece must be in between the jump
+        else:
+            # Calculate the space on the board that is jumped over
+            jump_spot = (curr_piece[0] + move[0] / 2, curr_piece[1] + move[1] / 2)
+
+            # Calculate the current and opposite teams
+            curr_team = curr_piece.get_team()
+            opp_team = RED
+            if curr_team == RED:
+                opp_team = BLUE
+
+            for piece in self.state[opp_team]:
+                if piece.get_position == jump_spot:
+                    curr_piece.change_position(new_spot)
+                    self.state[opp_team].remove(piece)
+
+                    promotion_row = curr_piece.get_team() * self.size
+                    if new_spot[1] == promotion_row and not curr_piece.is_king():
+                        curr_piece.promote()
+
+                    return
+            # Program reaches here if there is no opposing team's piece is in the jump_spot
+            raise ValueError("Invalid Move")
+
+    def deep_copy_state(self, state):
+        new_state = []
+        teams = 0
+        for team in state:
+            new_state.append([])
+            for piece in team:
+                new_piece = piece.deep_copy()
+                new_state[teams].append(new_piece)
+            teams += 1
+        return new_state
+
+    def try_move(self, curr_piece, move):
         """
 
         :param curr_piece: A tuple holding the (x,y) coordinates of a piece
@@ -102,7 +177,8 @@ class CheckersModel:
                         raise ValueError("Invalid Move")
             # After exiting the double for loop, we are sure that there are no pieces occupying the new square,
             # as no exceptions were raised
-            curr_piece.change_position(new_spot)
+
+            # In try_moves, so does not make any changes to the state
             return
 
         # A jump is taking place, so an opposing color piece must be in between the jump
@@ -118,12 +194,53 @@ class CheckersModel:
 
             for piece in self.state[opp_team]:
                 if piece.get_position == jump_spot:
-                    curr_piece.change_position(new_spot)
                     return
-            # Program reaches here if there is no opposing team's piece is in the jump_spot
+            # Program reaches here if there is no opposing team piece in the jump_spot
             raise ValueError("Invalid Move")
 
+    def possibleMoves(self, team_turn):
+        moves = []
+        for piece in self.state[team_turn]:
+            try:
+                self.try_move(piece, (1, 1))
+                moves.append((piece, (1, 1)))
+            except ValueError:
+                pass
+            try:
+                self.try_move(piece, (1, -1))
+                moves.append((piece, (1, -1)))
+            except ValueError:
+                pass
+            try:
+                self.try_move(piece, (-1, 1))
+                moves.append((piece, (-1, 1)))
+            except ValueError:
+                pass
+            try:
+                self.try_move(piece, (-1, -1))
+                moves.append((piece, (-1, -1)))
+            except ValueError:
+                pass
+            try:
+                self.try_move(piece, (2, 2))
+                moves.append((piece, (2, 2)))
+            except ValueError:
+                pass
+            try:
+                self.try_move(piece, (2, -2))
+                moves.append((piece, (2, -2)))
+            except ValueError:
+                pass
+            try:
+                self.try_move(piece, (-2, 2))
+                moves.append((piece, (-2, 2)))
+            except ValueError:
+                pass
+            try:
+                self.try_move(piece, (-2, -2))
+                moves.append((piece, (-2, -2)))
+            except ValueError:
+                pass
 
-
-
+            return moves
 
