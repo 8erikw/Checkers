@@ -12,7 +12,7 @@ class CheckersController:
     def play(self):
         print("Welcome! Start playing Checkers by choosing which team you would like to be on:")
         while(True):
-            choice = raw_input("Would you like to play as the Red pieces (first), or the Blue pieces (second)?")
+            choice = raw_input("Would you like to play as the Red pieces (first), or the Blue pieces (second)? ")
             choice = choice.lower()
             if choice == "red":
                 self.player = 0
@@ -24,10 +24,4 @@ class CheckersController:
                 print("I'm sorry, I couldn't recognize your input. Try Again!")
         while not self.model.isTerminalState():
             break
-            
-    # Finally beginning to implement some AI algorithmns
-    def generateSuccessor(self, state, action):
-        pass
 
-    def alpha_beta_pruning(self, state, turn, depth, alpha, beta):
-        pass

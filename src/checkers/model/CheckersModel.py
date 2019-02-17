@@ -21,7 +21,7 @@ DEPTH = 5
 # A piece must move if it is that respective player's turn and it is going to "Eat" an opposing player's piece
 
 class CheckersModel:
-    def __init__(self):
+    def __init__(self, upload = False, state = None):
         """
         Initializes the board
         """
@@ -29,7 +29,10 @@ class CheckersModel:
         self.state = []
         self.red_pieces = []
         self.blue_pieces = []
+        self.turn = RED
         self.init_Game()
+        if upload:
+            self.state = state
 
     def init_Game(self):
         """
@@ -69,6 +72,28 @@ class CheckersModel:
         :return: A boolean value denoting whether the game is over
         """
         return len(self.red_pieces) == 0 or len(self.blue_pieces) == 0
+
+    def force_jump(self):
+        for team in self.state:
+            for piece in team:
+                if self.jump_possible(piece):
+                    return True
+        return False
+
+    def jump_possible(self, piece):
+        if piece.is_king():
+            try:
+                self.try_move(piece, (2, -2))
+                self.try_move(piece, (-2, -2))
+            except ValueError:
+                return False
+        try:
+            self.try_move(piece, (2, 2))
+            self.try_move(piece, (2, 2))
+        except ValueError:
+            return False
+
+        return True
 
     def move(self, curr_piece, move):
         """
@@ -134,9 +159,10 @@ class CheckersModel:
             # Program reaches here if there is no opposing team's piece is in the jump_spot
             raise ValueError("Invalid Move")
 
-    def deep_copy_state(self, state):
+    def deep_copy_state(self):
         new_state = []
         teams = 0
+        state = self.state
         for team in state:
             new_state.append([])
             for piece in team:
@@ -170,7 +196,7 @@ class CheckersModel:
         # Checking so that moves are valid
 
         # Checking if a piece is not currently at the new_spot
-        if abs(move[0]) == 1:
+        if abs(move[0]) == 1 and not self.jump_possible(curr_piece):
             for team in self.state:
                 for piece in team:
                     if piece.get_position == new_spot:
@@ -182,7 +208,7 @@ class CheckersModel:
             return
 
         # A jump is taking place, so an opposing color piece must be in between the jump
-        else:
+        elif abs(move[0] == 2):
             # Calculate the space on the board that is jumped over
             jump_spot = (curr_piece[0] + move[0] / 2, curr_piece[1] + move[1] / 2)
 
@@ -198,49 +224,74 @@ class CheckersModel:
             # Program reaches here if there is no opposing team piece in the jump_spot
             raise ValueError("Invalid Move")
 
+        else:
+            raise ValueError("Invalid Move")
+
     def possibleMoves(self, team_turn):
         moves = []
-        for piece in self.state[team_turn]:
-            try:
-                self.try_move(piece, (1, 1))
-                moves.append((piece, (1, 1)))
-            except ValueError:
-                pass
-            try:
-                self.try_move(piece, (1, -1))
-                moves.append((piece, (1, -1)))
-            except ValueError:
-                pass
-            try:
-                self.try_move(piece, (-1, 1))
-                moves.append((piece, (-1, 1)))
-            except ValueError:
-                pass
-            try:
-                self.try_move(piece, (-1, -1))
-                moves.append((piece, (-1, -1)))
-            except ValueError:
-                pass
-            try:
-                self.try_move(piece, (2, 2))
-                moves.append((piece, (2, 2)))
-            except ValueError:
-                pass
-            try:
-                self.try_move(piece, (2, -2))
-                moves.append((piece, (2, -2)))
-            except ValueError:
-                pass
-            try:
-                self.try_move(piece, (-2, 2))
-                moves.append((piece, (-2, 2)))
-            except ValueError:
-                pass
-            try:
-                self.try_move(piece, (-2, -2))
-                moves.append((piece, (-2, -2)))
-            except ValueError:
-                pass
+        if self.force_jump():
+            for piece in self.state[team_turn]:
+                try:
+                    self.try_move(piece, (2, 2))
+                    moves.append((piece, (2, 2)))
+                except ValueError:
+                    pass
+                try:
+                    self.try_move(piece, (2, -2))
+                    moves.append((piece, (2, -2)))
+                except ValueError:
+                    pass
+                try:
+                    self.try_move(piece, (-2, 2))
+                    moves.append((piece, (-2, 2)))
+                except ValueError:
+                    pass
+                try:
+                    self.try_move(piece, (-2, -2))
+                    moves.append((piece, (-2, -2)))
+                except ValueError:
+                    pass
+        else:
+            for piece in self.state[team_turn]:
+                try:
+                    self.try_move(piece, (1, 1))
+                    moves.append((piece, (1, 1)))
+                except ValueError:
+                    pass
+                try:
+                    self.try_move(piece, (1, -1))
+                    moves.append((piece, (1, -1)))
+                except ValueError:
+                    pass
+                try:
+                    self.try_move(piece, (-1, 1))
+                    moves.append((piece, (-1, 1)))
+                except ValueError:
+                    pass
+                try:
+                    self.try_move(piece, (-1, -1))
+                    moves.append((piece, (-1, -1)))
+                except ValueError:
+                    pass
+        return moves
 
-            return moves
+    # Finally beginning to implement some AI algorithmns
+    def generateSuccessor(self, action):
+        try:
+            new_state = self.deep_copy_state()
+            new_model = CheckersModel(upload=True, state=new_state)
+            new_model.move(action[0], action[1])
+            return new_model
+        except ValueError:
+            return
 
+    def alpha_beta_pruning(self, model, turn, depth, alpha, beta, player):
+        min = True
+        if player == BLUE:
+            min = False
+        if depth == 0 or model.isTerminalState():
+            return len(model.blue_pieces) - len(model.red_pieces)
+        for action in model.possibleMoves(turn):
+            state = model.generateSuccessor(action)
+            if min:
+                return min()
