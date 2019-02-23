@@ -22,6 +22,11 @@ class CheckersController:
                 break
             else:
                 print("I'm sorry, I couldn't recognize your input. Try Again!")
+        if self.player == 0:
+            self.model.printBoard()
+            x = int(input("Enter the x position of the piece you would like to move"))
+            y = int(input("Enter the y position of the piece you would like to move"))
+            self.model.move()
         while not self.model.isTerminalState():
-            break
+
 

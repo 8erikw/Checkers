@@ -37,3 +37,13 @@ class Pieces:
         if self.king:
             new_king = True
         return Pieces(x, y, team, king=new_king)
+
+    def getString(self):
+        if self.team == RED:
+            if self.king:
+                return "R*"
+            return "R."
+        if self.king:
+            return "B*"
+        return "B."
+

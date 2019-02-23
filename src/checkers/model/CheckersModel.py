@@ -31,6 +31,9 @@ class CheckersModel:
         self.blue_pieces = []
         self.turn = RED
         self.init_Game()
+        self.piece_taken = False
+        self.board = [["__" for x in range(self.size)]for y in range(self.size)]
+
         if upload:
             self.state = state
 
@@ -40,25 +43,31 @@ class CheckersModel:
 
         Here is the normal start state of a standard 8 by 8 checkerboard
 
-              0 1 2 3 4 5 6 7
-            0 _ B _ B _ B _ B
-            1 B _ B _ B _ B _
-            2 _ B _ B _ B _ B
-            3 _ _ _ _ _ _ _ _
-            4 _ _ _ _ _ _ _ _
-            5 R _ R _ R _ R _
-            6 _ R _ R _ R _ R
-            7 R _ R _ R _ R _
+              0  1  2  3  4  5  6  7
+            0 __ B  __ B  __ B  __ B
+            1 B  __ B  __ B  __ B  __
+            2 __ B  __ B  __ B  __ B
+            3 __ __ __ __ __ __ __ __
+            4 __ __ __ __ __ __ __ __
+            5 R  __ R  __ R  __ R  __
+            6 __ R  __ R  __ R  __ R
+            7 R  __ R  __ R  __ R  __
 
         """
         size = self.size
 
         for i in range(size):
             if i % 2 == 0:
+                self.board[5][i] = "R."
+                self.board[7][i] = "R."
+                self.board[1][i] = "B."
                 self.red_pieces.append(Pieces(5, i, RED))
                 self.red_pieces.append(Pieces(7, i, RED))
                 self.blue_pieces.append(Pieces(1, i, BLUE))
             else:
+                self.board[0][i] = "B."
+                self.board[2][i] = "B."
+                self.board[6][i] = "R."
                 self.blue_pieces.append(Pieces(0, i, BLUE))
                 self.blue_pieces.append(Pieces(2, i, BLUE))
                 self.red_pieces.append(Pieces(6, i, RED))
@@ -110,8 +119,9 @@ class CheckersModel:
         if abs(move[1]) != abs(move[0]) and (abs(move[0]) > 2 or move[0] == 0):
             raise ValueError("Invalid Move")
 
+        curr_pos = curr_piece.get_position()
         # new_spot is the new location of the curr_piece
-        new_spot = (curr_piece[0] + move[0], curr_piece[1] + move[1])
+        new_spot = (curr_pos[0] + move[0], curr_pos[1] + move[1])
 
         # Checks if the new_spot is within the board's boundaries
         if new_spot[0] < 0 or new_spot[1] < 0 or new_spot[0] > self.size - 1 or new_spot[1] > self.size - 1:
@@ -123,22 +133,23 @@ class CheckersModel:
         if abs(move[0]) == 1:
             for team in self.state:
                 for piece in team:
-                    if piece.get_position == new_spot:
+                    if curr_pos == new_spot:
                         raise ValueError("Invalid Move")
             # After exiting the double for loop, we are sure that there are no pieces occupying the new square,
             # as no exceptions were raised
             curr_piece.change_position(new_spot)
+            self.board[curr_pos[0]][curr_pos[1]] = "__"
 
             promotion_row = curr_piece.get_team() * self.size
             if new_spot[1] == promotion_row and not curr_piece.is_king():
                 curr_piece.promote()
-
+            self.board[new_spot[0]][new_spot[1]] = curr_piece.getString()
             return
 
         # A jump is taking place, so an opposing color piece must be in between the jump
         else:
             # Calculate the space on the board that is jumped over
-            jump_spot = (curr_piece[0] + move[0] / 2, curr_piece[1] + move[1] / 2)
+            jump_spot = (curr_pos[0] + move[0] / 2, curr_pos[1] + move[1] / 2)
 
             # Calculate the current and opposite teams
             curr_team = curr_piece.get_team()
@@ -155,6 +166,9 @@ class CheckersModel:
                     if new_spot[1] == promotion_row and not curr_piece.is_king():
                         curr_piece.promote()
 
+                    self.board[jump_spot[0]][jump_spot[1]] = "__"
+                    self.board[curr_pos[0]][curr_pos[1]] = "__"
+                    self.board[new_spot[0]][new_spot[1]] = curr_piece.getString()
                     return
             # Program reaches here if there is no opposing team's piece is in the jump_spot
             raise ValueError("Invalid Move")
@@ -275,6 +289,15 @@ class CheckersModel:
                     pass
         return moves
 
+    def printBoard(self):
+        print("  0  1  2  3  4  5  6  7 ")
+        for i in range(self.size):
+            print i, " {}".format(self.board[i])
+
+    # Current Calculation for best move, which will be updated in the future
+    def utility(self):
+        return len(self.blue_pieces) - len(self.red_pieces)
+
     # Finally beginning to implement some AI algorithmns
     def generateSuccessor(self, action):
         try:
@@ -285,13 +308,54 @@ class CheckersModel:
         except ValueError:
             return
 
-    def alpha_beta_pruning(self, model, turn, depth, alpha, beta, player):
-        min = True
+    def alpha_beta_pruning(self, model, depth, alpha, beta, player, b_action=None):
+        new_turn = RED
+        if model.turn == RED:
+            new_turn = BLUE
+
+        minimize = True
         if player == BLUE:
-            min = False
+            minimize = False
+
+        if model.turn == player:
+            minimize = not minimize
+
         if depth == 0 or model.isTerminalState():
-            return len(model.blue_pieces) - len(model.red_pieces)
-        for action in model.possibleMoves(turn):
-            state = model.generateSuccessor(action)
-            if min:
-                return min()
+            util_action = (model.utility(), b_action)
+            return util_action
+        best_action = b_action
+
+        if minimize:
+            minimum = -50
+            for action in model.possibleMoves(model.turn):
+                new_model = model.generateSuccessor(action)
+                if model.turn == new_model.turn:
+                    curr_action = model.alpha_beta_pruning(new_model, depth, alpha, beta, player, b_action=action)
+                else:
+                    curr_action = model.alpha_beta_pruning(new_model, depth - 1, alpha, beta, player, b_action=action)
+
+                if minimum < curr_action[0]:
+                    minimum = curr_action[0]
+                    best_action = action
+                beta = min(beta, minimum)
+                if alpha >= beta:
+                    break
+            util_action = (minimum, best_action)
+            return util_action
+        else:
+            maximum = 50
+            for action in model.possibleMoves(model.turn):
+                new_model = model.generateSuccessor(action)
+                if model.turn == new_model.turn:
+                    curr_action = model.alpha_beta_pruning(new_model, depth, alpha, beta, player, b_action=action)
+                else:
+                    curr_action = model.alpha_beta_pruning(new_model, depth - 1, alpha, beta, player, b_action=action)
+
+                if maximum > curr_action[0]:
+                    maximum = curr_action[0]
+                    best_action = action
+                alpha = max(alpha, maximum)
+                if alpha >= beta:
+                    break
+            util_action = (maximum, best_action)
+            return util_action
