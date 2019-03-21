@@ -21,7 +21,7 @@ DEPTH = 5
 # A piece must move if it is that respective player's turn and it is going to "Eat" an opposing player's piece
 
 class CheckersModel:
-    def __init__(self, upload = False, state = None):
+    def __init__(self, upload=False, state=None):
         """
         Initializes the board
         """
@@ -32,7 +32,7 @@ class CheckersModel:
         self.turn = RED
         self.init_Game()
         self.piece_taken = False
-        self.board = [["__" for x in range(self.size)]for y in range(self.size)]
+        self.board = dict([((x, y), "__") for x in range(self.size) for y in range(self.size)])
 
         if upload:
             self.state = state
@@ -58,16 +58,16 @@ class CheckersModel:
 
         for i in range(size):
             if i % 2 == 0:
-                self.board[5][i] = "R."
-                self.board[7][i] = "R."
-                self.board[1][i] = "B."
+                self.board[(5, i)] = "R."
+                self.board[(7, i)] = "R."
+                self.board[(1, i)] = "B."
                 self.red_pieces.append(Pieces(5, i, RED))
                 self.red_pieces.append(Pieces(7, i, RED))
                 self.blue_pieces.append(Pieces(1, i, BLUE))
             else:
-                self.board[0][i] = "B."
-                self.board[2][i] = "B."
-                self.board[6][i] = "R."
+                self.board[(0, i)] = "B."
+                self.board[(2, i)] = "B."
+                self.board[(6, i)] = "R."
                 self.blue_pieces.append(Pieces(0, i, BLUE))
                 self.blue_pieces.append(Pieces(2, i, BLUE))
                 self.red_pieces.append(Pieces(6, i, RED))
@@ -133,17 +133,18 @@ class CheckersModel:
         if abs(move[0]) == 1:
             for team in self.state:
                 for piece in team:
-                    if curr_pos == new_spot:
+                    if piece.get_position() == new_spot:
                         raise ValueError("Invalid Move")
             # After exiting the double for loop, we are sure that there are no pieces occupying the new square,
             # as no exceptions were raised
             curr_piece.change_position(new_spot)
-            self.board[curr_pos[0]][curr_pos[1]] = "__"
+            self.board[curr_pos] = "__"
 
             promotion_row = curr_piece.get_team() * self.size
             if new_spot[1] == promotion_row and not curr_piece.is_king():
                 curr_piece.promote()
-            self.board[new_spot[0]][new_spot[1]] = curr_piece.getString()
+            self.board[new_spot] = curr_piece.getString()
+            self.piece_taken = False
             return
 
         # A jump is taking place, so an opposing color piece must be in between the jump
@@ -166,9 +167,10 @@ class CheckersModel:
                     if new_spot[1] == promotion_row and not curr_piece.is_king():
                         curr_piece.promote()
 
-                    self.board[jump_spot[0]][jump_spot[1]] = "__"
-                    self.board[curr_pos[0]][curr_pos[1]] = "__"
-                    self.board[new_spot[0]][new_spot[1]] = curr_piece.getString()
+                    self.board[jump_spot] = "__"
+                    self.board[curr_pos] = "__"
+                    self.board[new_spot] = curr_piece.getString()
+                    self.piece_taken = True
                     return
             # Program reaches here if there is no opposing team's piece is in the jump_spot
             raise ValueError("Invalid Move")
@@ -292,7 +294,10 @@ class CheckersModel:
     def printBoard(self):
         print("  0  1  2  3  4  5  6  7 ")
         for i in range(self.size):
-            print i, " {}".format(self.board[i])
+            line = str(i)
+            for j in range(self.size):
+                line += self.board[(i, j)]
+            print(line)
 
     # Current Calculation for best move, which will be updated in the future
     def utility(self):

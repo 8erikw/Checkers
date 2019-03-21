@@ -1,4 +1,4 @@
-from checkers.controller.CheckersController import CheckersController
+import CheckersController
 
 
 def main():
