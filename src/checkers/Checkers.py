@@ -2,7 +2,7 @@ import CheckersController
 
 
 def main():
-    controller = CheckersController()
+    controller = CheckersController.CheckersController()
     controller.play()
 
 

@@ -1,8 +1,8 @@
-RED, BLUE = 0, 1
+RED, BLUE = -1, 1
 
 
 class Pieces:
-    def __init__(self, x_position, y_position, team, king = False):
+    def __init__(self, x_position, y_position, team, king=False):
         self.position = (x_position, y_position)
         self.team = team
         self.king = king
@@ -27,7 +27,7 @@ class Pieces:
     def get_team(self):
         return self.team
 
-    def deep_copy(self):
+    def deep_copy_piece(self):
         x = self.position[0]
         y = self.position[1]
         team = BLUE
@@ -39,6 +39,8 @@ class Pieces:
         return Pieces(x, y, team, king=new_king)
 
     def getString(self):
+        if self.team == 0:
+            return "__"
         if self.team == RED:
             if self.king:
                 return "R*"
