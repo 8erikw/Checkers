@@ -17,9 +17,7 @@ class Pieces:
         return self.king
 
     def change_position(self, dx, dy):
-        x = self.position[0]
-        y = self.position[1]
-        self.position = (x + dx, y + dy)
+        self.position = (dx, dy)
 
     def get_position(self):
         return self.position
@@ -28,15 +26,16 @@ class Pieces:
         return self.team
 
     def deep_copy_piece(self):
-        x = self.position[0]
-        y = self.position[1]
-        team = BLUE
-        if self.team == RED:
-            team = RED
+        x = self.position[0] + 0
+        y = self.position[1] + 0
+        team = self.team + 0
         new_king = False
         if self.king:
             new_king = True
-        return Pieces(x, y, team, king=new_king)
+        return Pieces(x, y, team + 0, king=new_king)
+
+    def toString(self):
+        return self.getString() + " at (" + str(self.position[0]) + ", " + str(self.position[1]) + ")"
 
     def getString(self):
         if self.team == 0:

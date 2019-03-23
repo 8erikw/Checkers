@@ -9,7 +9,6 @@ from Pieces import Pieces
 
 RED = -1
 BLUE = 1
-DEPTH = 5
 
 
 # RED pieces will always go first
@@ -51,7 +50,7 @@ class CheckersModel:
         piece_taken = self.piece_taken
 
         new_model = CheckersModel(copy=True, size=size, turn=turn, board=board, piece_taken=piece_taken)
-        #new_model.printBoard()
+        # new_model.printBoard()
         return new_model
 
     def init_Game(self):
@@ -88,6 +87,7 @@ class CheckersModel:
         Returns whether the current state of the game is over, regardless of who won or lost
         :return: A boolean value denoting whether the game is over
         """
+
         red = 0
         blue = 0
         for piece in self.board.values():
@@ -253,7 +253,6 @@ class CheckersModel:
 
         # new_spot is the new location of the curr_piece
         curr_position = curr_piece.get_position()
-
         new_spot = (curr_position[0] + move[0], curr_position[1] + move[1])
 
         # Checks if the new_spot is within the board's boundaries
@@ -264,90 +263,92 @@ class CheckersModel:
 
         # Checking if a piece is not currently at the new_spot
 
-        if not self.board[new_spot].get_team() == 0:
+        if self.board[new_spot].get_team() != 0:
             raise ValueError("Invalid Move, new spot is occupied")
 
         if abs(move[0]) == 1 and not self.jump_possible(curr_piece):
             return
 
         # A jump is taking place, so an opposing color piece must be in between the jump
-        elif abs(move[0] == 2):
+        elif abs(move[0]) == 2:
             # Calculate the space on the board that is jumped over
-            jump_spot = (curr_position[0] + move[0] / 2, curr_position[1] + move[1] / 2)
+            jump_spot = (curr_position[0] + int(move[0] / 2), curr_position[1] + int(move[1] / 2))
 
-            if self.board[jump_spot].get_team() == self.turn * -1:
+            if self.board[jump_spot].get_team() == curr_piece.get_team() * -1:
                 return
 
             # Program reaches here if there is no opposing team piece in the jump_spot
             raise ValueError("Invalid Move")
-
         else:
             raise ValueError("Invalid Move")
 
     def possibleMoves(self):
         moves = []
         must_jump = self.force_jump()
-        #print(must_jump, self.turn)
+        # print(must_jump, self.turn)
         for piece in self.board.values():
-            piece = piece.deep_copy_piece()
-            if self.turn == piece.get_team() and piece.get_team() != 0:
+            if self.turn == piece.get_team():
                 if must_jump:
                     try:
                         self.try_move(piece, (2, 2))
-                        #print("Adding 2,2", piece.get_position()[0], piece.get_position()[1])
+                        # print("Adding 2,2", piece.get_position()[0], piece.get_position()[1])
                         moves.append((piece, (2, 2)))
                     except ValueError:
                         pass
                     try:
                         self.try_move(piece, (2, -2))
-                        #print("Adding 2,-2", piece.get_position()[0], piece.get_position()[1])
+                        # print("Adding 2,-2", piece.get_position()[0], piece.get_position()[1])
                         moves.append((piece, (2, -2)))
                     except ValueError:
                         pass
                     try:
                         self.try_move(piece, (-2, 2))
-                        #print("Adding -2,2", piece.get_position()[0], piece.get_position()[1])
+                        # print("Adding -2,2", piece.get_position()[0], piece.get_position()[1])
                         moves.append((piece, (-2, 2)))
                     except ValueError:
                         pass
                     try:
                         self.try_move(piece, (-2, -2))
-                        #print("Adding -2,-2", piece.get_position()[0], piece.get_position()[1])
+                        # print("Adding -2,-2", piece.get_position()[0], piece.get_position()[1])
                         moves.append((piece, (-2, -2)))
                     except ValueError:
                         pass
                 else:
                     try:
                         self.try_move(piece, (1, 1))
-                        #print("Adding 1,1", piece.get_position()[0], piece.get_position()[1])
+                        # print("Adding 1,1", piece.get_position()[0], piece.get_position()[1])
                         moves.append((piece, (1, 1)))
                     except ValueError:
                         pass
                     try:
                         self.try_move(piece, (1, -1))
-                        #print("Adding 1,-1", piece.get_position()[0], piece.get_position()[1])
+                        # print("Adding 1,-1", piece.get_position()[0], piece.get_position()[1])
                         moves.append((piece, (1, -1)))
                     except ValueError:
                         pass
                     try:
                         self.try_move(piece, (-1, 1))
-                        #print("Adding -1,1", piece.get_position()[0], piece.get_position()[1])
+                        # print("Adding -1,1", piece.get_position()[0], piece.get_position()[1])
                         moves.append((piece, (-1, 1)))
                     except ValueError:
                         pass
                     try:
                         self.try_move(piece, (-1, -1))
-                        #print("Adding -1,-1", piece.get_position()[0], piece.get_position()[1])
+                        # print("Adding -1,-1", piece.get_position()[0], piece.get_position()[1])
                         moves.append((piece, (-1, -1)))
                     except ValueError:
                         pass
-        #print("Next turn")
+        # print("Next turn")
         return moves
 
     def isTurnOver(self):
         return self.force_jump()
 
     def printBoard(self):
+        s_turn = "BLUE"
+        if self.turn == -1:
+            s_turn = "RED"
+        print("Turn: " + s_turn)
         print("   0  1  2  3  4  5  6  7")
         for j in range(self.size):
             line = " " + str(j) + " "
@@ -365,7 +366,7 @@ class CheckersModel:
 
     # Finally beginning to implement some AI algorithms
     def generateSuccessor(self, action):
-        #print(action[0].get_position()[0], action[0].get_position()[1], action[1])
+        # print(action[0].get_position()[0], action[0].get_position()[1], action[1])
         new_copy = self.deepcopy()
         position = action[0].get_position()
         new_copy.move(new_copy.board[position], action[1])
@@ -375,46 +376,34 @@ class CheckersModel:
         minimize = True
         if player == BLUE:
             minimize = False
-
-        if self.turn == player:
-            minimize = not minimize
-
         if depth == 0 or self.isTerminalState():
             util_action = (self.utility(), b_action)
             return util_action
         best_action = b_action
-        if minimize:
-            minimum = -50
-            for action in self.possibleMoves():
-                new_model = self.generateSuccessor(action)
+        util_action = None
+        moves = self.possibleMoves()
 
-                if self.turn == new_model.turn:
-                    curr_action = new_model.alpha_beta_pruning(depth, alpha, beta, player, b_action=action)
-                else:
-                    curr_action = new_model.alpha_beta_pruning(depth - 1, alpha, beta, player, b_action=action)
+        for action in moves:
+            new_model = self.generateSuccessor(action)
 
+            if self.force_jump():
+                curr_action = new_model.alpha_beta_pruning(depth, alpha, beta, player, b_action=action)
+            else:
+                curr_action = new_model.alpha_beta_pruning(depth - 1, alpha, beta, player * -1, b_action=action)
+            if minimize:
+                minimum = -100
                 if minimum < curr_action[0]:
                     minimum = curr_action[0]
                     best_action = action
-                beta = min(beta, minimum)
-                if alpha >= beta:
-                    break
-            util_action = (minimum, best_action)
-            return util_action
-        else:
-            maximum = 50
-            for action in self.possibleMoves():
-                new_model = self.generateSuccessor(action)
-                if self.turn == new_model.turn:
-                    curr_action = new_model.alpha_beta_pruning(depth, alpha, beta, player, b_action=action)
-                else:
-                    curr_action = new_model.alpha_beta_pruning(depth - 1, alpha, beta, player, b_action=action)
-
+                beta = max(beta, minimum)
+                util_action = (beta, best_action)
+            else:
+                maximum = 100
                 if maximum > curr_action[0]:
                     maximum = curr_action[0]
                     best_action = action
-                alpha = max(alpha, maximum)
-                if alpha >= beta:
-                    break
-            util_action = (maximum, best_action)
-            return util_action
+                alpha = min(alpha, maximum)
+                util_action = (alpha, best_action)
+            if alpha >= beta:
+                break
+        return util_action

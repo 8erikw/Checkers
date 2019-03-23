@@ -2,6 +2,7 @@ import CheckersModel as Cm
 
 RED = -1
 BLUE = 1
+DEPTH = 50
 
 
 class CheckersController:
@@ -9,7 +10,7 @@ class CheckersController:
         self.model = Cm.CheckersModel()
         self.player = 0
 
-    def play(self, by_self=False):
+    def play(self):
         print("Welcome! Start playing Checkers by choosing which team you would like to be on:")
         while True:
             choice = input("Would you like to play as the Red pieces (first), or the Blue pieces (second)? ")
@@ -24,11 +25,10 @@ class CheckersController:
                 print("I'm sorry, I couldn't recognize your input. Try Again!")
 
         while not self.model.isTerminalState():
-            print("Turn: ", self.model.turn)
             move_made = False
             while not self.model.isTurnOver() or not move_made:
                 move_made = True
-                #print(self.model.force_jump())
+                # print(self.model.force_jump())
                 self.model.printBoard()
                 if self.model.turn == self.player:
                     while True:
@@ -44,7 +44,7 @@ class CheckersController:
                             print("Try again!")
 
                 else:
-                    comp_action = self.model.alpha_beta_pruning(5, 49, -49, self.player)
+                    comp_action = self.model.alpha_beta_pruning(5, 49, -49, self.player * -1)
                     print("Computer: I calculate a score of ", comp_action[0])
                     print("Computer: I move ", comp_action[1][0].get_position(), " by ", comp_action[1][1])
                     self.model.move(comp_action[1][0], comp_action[1][1])
@@ -60,9 +60,33 @@ class CheckersController:
         self.model.move(self.model.board[(3, 2)], (-1, 1))
         self.model.printBoard()
         print(self.model.force_jump())
-        #self.model.move(self.model.board[(2, 5)], (1, -1))
+        # self.model.move(self.model.board[(2, 5)], (1, -1))
         self.model.move(self.model.board[(1, 4)], (2, -2))
         self.model.printBoard()
         print(self.model.force_jump())
         self.model.move(self.model.board[(1, 2)], (-1, 1))
         self.model.printBoard()
+
+    def self_play(self):
+        turns = 0
+        self.player = -1
+        self.model.printBoard()
+        while not self.model.isTerminalState():
+            move_made = False
+            while not move_made:
+                move_made = self.model.isTurnOver()
+
+                comp_action = self.model.alpha_beta_pruning(DEPTH, 12, -12, self.player)
+
+                print(turns, "Computer: I calculate a score of", comp_action[0])
+                print(self.player, ": I move", comp_action[1][0].toString(), "by", comp_action[1][1])
+                print(comp_action[0])
+                self.model.move(comp_action[1][0], comp_action[1][1])
+                turns += 1
+                self.model.printBoard()
+                self.model = self.model.deepcopy()
+            self.player = self.player * -1
+        winner = "RED"
+        if self.model.winner() == BLUE:
+            winner = "BLUE"
+        print("The winner is " + winner)
