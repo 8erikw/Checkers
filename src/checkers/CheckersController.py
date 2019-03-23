@@ -28,7 +28,7 @@ class CheckersController:
             move_made = False
             while not self.model.isTurnOver() or not move_made:
                 move_made = True
-                print(self.model.force_jump())
+                #print(self.model.force_jump())
                 self.model.printBoard()
                 if self.model.turn == self.player:
                     while True:
@@ -44,9 +44,25 @@ class CheckersController:
                             print("Try again!")
 
                 else:
-                    comp_action = self.model.alpha_beta_pruning(5, -49, 49, self.player)
+                    comp_action = self.model.alpha_beta_pruning(5, 49, -49, self.player)
                     print("Computer: I calculate a score of ", comp_action[0])
                     print("Computer: I move ", comp_action[1][0].get_position(), " by ", comp_action[1][1])
                     self.model.move(comp_action[1][0], comp_action[1][1])
 
         print("The winner is ", self.model.winner())
+
+    def test(self):
+        self.model.printBoard()
+        self.model.move(self.model.board[(0, 5)], (1, -1))
+        self.model.printBoard()
+        pos = self.model.board[(3, 4)].get_position()
+        print(pos[0], pos[1])
+        self.model.move(self.model.board[(3, 2)], (-1, 1))
+        self.model.printBoard()
+        print(self.model.force_jump())
+        #self.model.move(self.model.board[(2, 5)], (1, -1))
+        self.model.move(self.model.board[(1, 4)], (2, -2))
+        self.model.printBoard()
+        print(self.model.force_jump())
+        self.model.move(self.model.board[(1, 2)], (-1, 1))
+        self.model.printBoard()
