@@ -3,7 +3,7 @@ import CheckersController
 
 def main():
     controller = CheckersController.CheckersController()
-    controller.self_play()
+    controller.play()
 
 
 if __name__ == "__main__":

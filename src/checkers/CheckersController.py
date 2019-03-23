@@ -2,7 +2,7 @@ import CheckersModel as Cm
 
 RED = -1
 BLUE = 1
-DEPTH = 50
+DEPTH = 5
 
 
 class CheckersController:
@@ -44,7 +44,7 @@ class CheckersController:
                             print("Try again!")
 
                 else:
-                    comp_action = self.model.alpha_beta_pruning(5, 49, -49, self.player * -1)
+                    comp_action = self.model.alpha_beta_pruning(DEPTH, -12, 12, self.player * -1)
                     print("Computer: I calculate a score of ", comp_action[0])
                     print("Computer: I move ", comp_action[1][0].get_position(), " by ", comp_action[1][1])
                     self.model.move(comp_action[1][0], comp_action[1][1])
@@ -69,24 +69,27 @@ class CheckersController:
 
     def self_play(self):
         turns = 0
-        self.player = -1
         self.model.printBoard()
+
         while not self.model.isTerminalState():
-            move_made = False
-            while not move_made:
-                move_made = self.model.isTurnOver()
+            if self.model.turn == RED:
+                comp_action = self.model.alpha_beta_pruning(DEPTH, -12, 12, RED)
+            else:
+                comp_action = self.model.alpha_beta_pruning(DEPTH, -12, 12, BLUE)
 
-                comp_action = self.model.alpha_beta_pruning(DEPTH, 12, -12, self.player)
+            print(turns, "Computer: I calculate a score of", comp_action[0])
+            print(self.model.turn, ": I move", comp_action[1][0].toString(), "by", comp_action[1][1])
 
-                print(turns, "Computer: I calculate a score of", comp_action[0])
-                print(self.player, ": I move", comp_action[1][0].toString(), "by", comp_action[1][1])
-                print(comp_action[0])
-                self.model.move(comp_action[1][0], comp_action[1][1])
-                turns += 1
-                self.model.printBoard()
-                self.model = self.model.deepcopy()
-            self.player = self.player * -1
+            self.model.move(comp_action[1][0], comp_action[1][1])
+            turns += 1
+            self.model.printBoard()
+
         winner = "RED"
-        if self.model.winner() == BLUE:
-            winner = "BLUE"
-        print("The winner is " + winner)
+
+        result = self.model.winner()
+        if result == 0:
+            print("The Game is a draw")
+        else:
+            if result == 1:
+                winner = "BLUE"
+            print("The winner is " + winner)

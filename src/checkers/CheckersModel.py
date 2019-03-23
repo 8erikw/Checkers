@@ -5,6 +5,7 @@
 # Author: Erik Wong
 # Date: February 1, 2019
 
+import random
 from Pieces import Pieces
 
 RED = -1
@@ -96,11 +97,22 @@ class CheckersModel:
             elif piece.get_team() == BLUE:
                 blue += 1
 
-        return red == 0 or blue == 0
+        return red == 0 or blue == 0 or len(self.possibleMoves()) == 0
 
     def winner(self):
-        if self.isTerminalState():
+        red = 0
+        blue = 0
+        for piece in self.board.values():
+            if piece.get_team() == RED:
+                red += 1
+            elif piece.get_team() == BLUE:
+                blue += 1
+        if self.isTerminalState() and (red == 0 or blue == 0):
             return self.turn * -1
+        elif len(self.possibleMoves()) == 0:
+            return 0
+        else:
+            return -2
 
     def force_jump(self):
         for piece in self.board.values():
@@ -360,50 +372,68 @@ class CheckersModel:
     # Current Calculation for best move, which will be updated in the future
     def utility(self):
         score = 0
-        for piece in self.board.values():
-            score += piece.get_team()
-        return score
+        winner = self.winner()
+        if winner == 0:
+            return 0
+        else:
+            for piece in self.board.values():
+                score += piece.get_team()
+            return score
 
     # Finally beginning to implement some AI algorithms
     def generateSuccessor(self, action):
         # print(action[0].get_position()[0], action[0].get_position()[1], action[1])
         new_copy = self.deepcopy()
         position = action[0].get_position()
+        jumped = False
+        if abs(action[1][1]) == 2:
+            jumped = True
         new_copy.move(new_copy.board[position], action[1])
-        return new_copy
+        return new_copy, jumped
 
     def alpha_beta_pruning(self, depth, alpha, beta, player, b_action=None):
         minimize = True
         if player == BLUE:
             minimize = False
+        # print(depth, self.utility())
         if depth == 0 or self.isTerminalState():
             util_action = (self.utility(), b_action)
             return util_action
-        best_action = b_action
         util_action = None
+        util_actions = []
         moves = self.possibleMoves()
-
         for action in moves:
-            new_model = self.generateSuccessor(action)
+            new_model_tuple = self.generateSuccessor(action)
+            new_model = new_model_tuple[0]
+            # print("searching", depth)
+            curr_action = new_model.alpha_beta_pruning(depth - 1, alpha, beta, new_model.turn, b_action=action)
+            # if new_model.force_jump() or new_model_tuple[1]:
+            #    print("Another move", depth)
+            #    curr_action = new_model.alpha_beta_pruning(depth, alpha, beta, new_model.turn, b_action=action)
+            # else:
+            #    curr_action = new_model.alpha_beta_pruning(depth - 1, alpha, beta, new_model.turn, b_action=action)
+            if curr_action is not None:
+                if minimize:
+                    if curr_action[0] < alpha:
+                        pass
+                    if curr_action[0] == beta:
+                        util_actions.append((beta, action))
+                    elif curr_action[0] < beta:
+                        util_actions = []
+                        beta = curr_action[0]
+                        util_actions.append((beta, action))
+                        util_action = (beta, action)
+                else:
+                    if curr_action[0] > beta:
+                        pass
+                    if curr_action[0] == alpha:
+                        util_actions.append((alpha, action))
+                    elif curr_action[0] > alpha:
+                        util_actions = []
+                        alpha = curr_action[0]
+                        util_actions.append((alpha, action))
+                        util_action = (alpha, action)
 
-            if self.force_jump():
-                curr_action = new_model.alpha_beta_pruning(depth, alpha, beta, player, b_action=action)
-            else:
-                curr_action = new_model.alpha_beta_pruning(depth - 1, alpha, beta, player * -1, b_action=action)
-            if minimize:
-                minimum = -100
-                if minimum < curr_action[0]:
-                    minimum = curr_action[0]
-                    best_action = action
-                beta = max(beta, minimum)
-                util_action = (beta, best_action)
-            else:
-                maximum = 100
-                if maximum > curr_action[0]:
-                    maximum = curr_action[0]
-                    best_action = action
-                alpha = min(alpha, maximum)
-                util_action = (alpha, best_action)
-            if alpha >= beta:
-                break
-        return util_action
+        if len(util_actions) == 0:
+            return util_action
+        return random.choice(util_actions)
